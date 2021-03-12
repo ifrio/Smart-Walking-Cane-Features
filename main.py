@@ -13,33 +13,31 @@ from flask import Flask
 app = Flask(__name__)
 
 def data_gen(x, y, longi, lati, freqLow, freqHigh, typey):
-    row = []
-    long = round(random.randint(x - 1, x + 1))
-    long = float(str(longi) + str(long))
-    lat = round(random.randint(y - 1, y + 1))
-    lat = float(str(lati) + str(lat))
-    freq = random.randint(freqLow, freqHigh)
-    if typey == 0 and freq >= 15:
-        wash = 1
-    elif typey == 1 and freq >= 55:
-        wash = 1
-    elif typey == 2:
-        wash = 1
-    else:
-        wash = 0
-    row.append(long)
-    row.append(lat)
-    row.append(freq)
-    row.append(wash)
-    row.append(typey)
-    return row
-
+  row = []
+  long = round(random.randint(x - 1, x + 1))
+  long = float(str(longi) + str(long))
+  lat = round(random.randint(y - 1, y + 1))
+  lat = float(str(lati) + str(lat))
+  freq = random.randint(freqLow, freqHigh)
+  if typey == 0 and freq >= 15:
+      wash = 1
+  elif typey == 1 and freq >= 55:
+      wash = 1
+  elif typey == 2:
+      wash = 1
+  else:
+      wash = 0
+  row.append(long)
+  row.append(lat)
+  row.append(freq)
+  row.append(wash)
+  row.append(typey)
+  return row
 
 def park_data():
-    #park, 33.6763114050008, -117.74963972385233
-    #if touched 15, labeled wash stick now
-    return data_gen(8, 3, 33.6742524050008, -117.74216672385233, 0, 30, 0)
-
+  #park, 33.6763114050008, -117.74963972385233
+  #if touched 15, labeled wash stick now
+  return data_gen(8, 3, 33.6742524050008, -117.74216672385233, 0, 30, 0)
 
 def home_data():
     #home, 33.68649735286263, -117.76223689376901
@@ -47,7 +45,6 @@ def home_data():
     #if touched 55 <, label wash stick now
 
     return data_gen(3, 1, 33.68649735286263, -117.76223689376901, 20, 60, 1)
-
 
 def store_data():
     #target, 33.68559244242906, -117.81338458443688
@@ -60,40 +57,49 @@ def makedatatable():
   data = []
 
   for i in range(int(records * .5)):
-      i = home_data()
-      data.append(i)
+    i = home_data()
+    data.append(i)
 
   for i in range(int(records * .1)):
-      i = park_data()
-      data.append(i)
+    i = park_data()
+    data.append(i)
 
   for i in range(int(records * .4)):
-      i = store_data()
-      data.append(i)
+    i = store_data()
+    data.append(i)
 
   data = pd.DataFrame(data,
                       columns=['Long', 'Lat', 'Frequency', "RecWash", 'Label'])
-  print(data)
+  return data
 
+@app.route("/predictFrequency/<long>/<lat>/<label>")
 def predictFrequency(long,lat, label):
-    data = makedatatable()
-    X_train = data[['Long', 'Lat', 'Label']]
-    Y_train = data[['Frequency']]
-    
-    # # Experiment 1- Model 1
-    model = linear_model.LinearRegression()
-    model.fit(X_train, y_train)  # learn, train, fit
-    return(model.predict([[Long, Lat, Label]]))
-
+  data = makedatatable()
+  X_train = data[['Long', 'Lat', 'Label']]
+  Y_train = data[['Frequency']]
   
+  # # Experiment 1- Model 1
+  model = linear_model.LinearRegression()
+  model.fit(X_train, Y_train)  # learn, train, fit
+  return str(model.predict([[long, lat, label]]))
 
-  def predictLocation(long,lat, label):
-    
-    return location
+@app.route("/predictLocation/<long>/<lat>/<frequency>")
+def predictLocation(long,lat, frequency):
+  data = makedatatable()
+  X_train = data[['Long','Lat','frequency']]
+  Y_train = data[['Label']]
+  model = svm.SVC()
+  model.fit(X_train, Y_train)
+  return model.predict([[long,lat,frequency]])
 
-  def predictNextClean(long,lat, label):
-
-    return timeTilClean
+@app.route("/predictNextClean/<long>/<lat>/<frequency>")
+def predictNextClean(long, lat, frequency):
+  data = makedatatable()
+  X_train = data[['Long','Lat','Frequency']]
+  Y_train = data[['RecWash']]
+  model = svm.SVC()
+  model.fit(X_train, Y_train)
+  return model.predict([[long,lat,frequency]])
 
 def researchQ1():
   print("")
@@ -138,7 +144,6 @@ def researchQ1():
   model.fit(X_train, y_train)
   print('Res:', model.score(X_test, y_test))
   print("")
-
 
 def ResearchQ2():
   # # Challenges
@@ -241,3 +246,5 @@ def ResearchQ3():
   model.fit(X_train, y_train)
   print('Res:', model.score(X_test, y_test))
   print("###################### The END ###########################")
+
+app.run(host="0.0.0.0")
